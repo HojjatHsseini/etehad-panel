@@ -1,7 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Initialize the Gemini API client
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined. Please set it in your environment variables.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 const SYSTEM_INSTRUCTION = `
 شما یک دستیار هوش مصنوعی برای "فروشگاه اتحاد" هستید. این فروشگاه لپ‌تاپ‌های استوک و نو می‌فروشد.
@@ -12,6 +22,7 @@ const SYSTEM_INSTRUCTION = `
 
 export async function generateAIResponse(message: string, platform: string): Promise<{ text: string; needsHuman: boolean }> {
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `پلتفرم: ${platform}\nپیام کاربر: ${message}`,
