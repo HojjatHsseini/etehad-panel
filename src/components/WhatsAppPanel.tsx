@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Send, Paperclip, MoreVertical, Check, CheckCheck, Bot, User } from 'lucide-react';
+import { Search, Send, Paperclip, MoreVertical, Check, CheckCheck, Bot, User, ArrowRight } from 'lucide-react';
 import { generateAIResponse } from '../services/aiService';
 
 interface Message {
@@ -27,6 +27,7 @@ export default function WhatsAppPanel() {
   const [activeChatId, setActiveChatId] = useState<number>(0);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [chats, setChats] = useState<Chat[]>([
@@ -69,7 +70,7 @@ export default function WhatsAppPanel() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [activeChat.messages, isTyping]);
+  }, [activeChat.messages, isTyping, showMobileChat]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -116,7 +117,7 @@ export default function WhatsAppPanel() {
           messages: [...chat.messages, newMessage],
           lastMessage: customerMsg,
           time: time,
-          unread: chat.id === activeChatId ? 0 : chat.unread + 1
+          unread: chat.id === activeChatId && showMobileChat ? 0 : chat.unread + 1
         };
       }
       return chat;
@@ -161,22 +162,22 @@ export default function WhatsAppPanel() {
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold text-brand-text-primary">پشتیبانی واتساپ (هوش مصنوعی)</h2>
-        <div className="flex items-center gap-4">
-          <button onClick={simulateCustomerMessage} className="px-3 py-1.5 bg-brand-bg-elevated text-brand-text-primary rounded-lg border border-brand-border text-sm hover:bg-brand-border transition-colors">
-            شبیه‌سازی پیام مشتری
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
+          <button onClick={simulateCustomerMessage} className="flex-1 sm:flex-none px-3 py-1.5 bg-brand-bg-elevated text-brand-text-primary rounded-lg border border-brand-border text-sm hover:bg-brand-border transition-colors text-center">
+            شبیه‌سازی پیام
           </button>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-success/10 text-brand-success rounded-lg border border-brand-success/20">
             <span className="w-2 h-2 bg-brand-success rounded-full animate-pulse"></span>
-            <span className="text-sm font-medium">متصل به واتساپ بیزینس</span>
+            <span className="text-sm font-medium">متصل به واتساپ</span>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 brand-glass-card rounded-xl flex overflow-hidden border border-brand-border">
+      <div className="flex-1 brand-glass-card rounded-xl flex overflow-hidden border border-brand-border relative">
         {/* Sidebar */}
-        <div className="w-1/3 border-l border-brand-border flex flex-col bg-brand-bg-card">
+        <div className={`w-full md:w-1/3 border-l border-brand-border flex-col bg-brand-bg-card ${showMobileChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-brand-border">
             <div className="relative">
               <input
@@ -198,6 +199,7 @@ export default function WhatsAppPanel() {
                 onClick={() => {
                   setActiveChatId(chat.id);
                   setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
+                  setShowMobileChat(true);
                 }}
                 className={`p-4 border-b border-brand-border cursor-pointer transition-colors flex gap-3
                   ${activeChatId === chat.id ? "bg-brand-bg-elevated" : "hover:bg-brand-bg-elevated/50"}
@@ -236,10 +238,16 @@ export default function WhatsAppPanel() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col bg-brand-bg-base">
+        <div className={`flex-1 flex-col bg-brand-bg-base ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>
           {/* Chat Header */}
           <div className="p-4 bg-brand-bg-card border-b border-brand-border flex justify-between items-center">
             <div className="flex items-center gap-3">
+              <button 
+                className="md:hidden p-2 -mr-2 text-brand-text-muted hover:bg-brand-bg-elevated rounded-full"
+                onClick={() => setShowMobileChat(false)}
+              >
+                <ArrowRight size={20} />
+              </button>
               <div className="w-10 h-10 bg-brand-bg-elevated border border-brand-border rounded-full flex items-center justify-center text-brand-text-muted font-bold">
                 {activeChat.name.charAt(0)}
               </div>
@@ -247,7 +255,7 @@ export default function WhatsAppPanel() {
                 <h3 className="font-medium text-brand-text-primary flex items-center gap-2">
                   {activeChat.name}
                   {activeChat.needsAttention && (
-                    <span className="text-xs bg-brand-warning/20 text-brand-warning px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-brand-warning/20 text-brand-warning px-2 py-0.5 rounded-full hidden sm:inline-block">
                       نیاز به بررسی انسانی
                     </span>
                   )}
@@ -255,19 +263,20 @@ export default function WhatsAppPanel() {
                 <p className="text-xs text-brand-success">آنلاین</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button 
                 onClick={toggleAI}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                   activeChat.aiEnabled 
                     ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30' 
                     : 'bg-brand-bg-elevated text-brand-text-muted border border-brand-border'
                 }`}
               >
                 <Bot size={16} />
-                {activeChat.aiEnabled ? 'هوش مصنوعی فعال' : 'هوش مصنوعی غیرفعال'}
+                <span className="hidden sm:inline">{activeChat.aiEnabled ? 'هوش مصنوعی فعال' : 'هوش مصنوعی غیرفعال'}</span>
+                <span className="sm:hidden">{activeChat.aiEnabled ? 'AI فعال' : 'AI خاموش'}</span>
               </button>
-              <button className="p-2 text-brand-text-muted hover:bg-brand-bg-elevated rounded-full">
+              <button className="p-2 text-brand-text-muted hover:bg-brand-bg-elevated rounded-full hidden sm:block">
                 <MoreVertical size={20} />
               </button>
             </div>
@@ -281,7 +290,7 @@ export default function WhatsAppPanel() {
                 className={`flex ${msg.sender === "them" ? "justify-start" : "justify-end"}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                  className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2 ${
                     msg.sender === "me"
                       ? "bg-brand-secondary text-white rounded-br-none"
                       : msg.sender === "ai"
@@ -323,9 +332,9 @@ export default function WhatsAppPanel() {
           </div>
 
           {/* Input */}
-          <div className="p-4 bg-brand-bg-card border-t border-brand-border">
+          <div className="p-3 sm:p-4 bg-brand-bg-card border-t border-brand-border">
             <div className="flex items-center gap-2">
-              <button className="p-2 text-brand-text-muted hover:bg-brand-bg-elevated rounded-full transition-colors">
+              <button className="p-2 text-brand-text-muted hover:bg-brand-bg-elevated rounded-full transition-colors hidden sm:block">
                 <Paperclip size={20} />
               </button>
               <input
@@ -338,9 +347,9 @@ export default function WhatsAppPanel() {
               />
               <button 
                 onClick={handleSendMessage}
-                className="p-2 bg-brand-primary text-white rounded-full hover:bg-blue-600 transition-colors shadow-lg shadow-brand-primary/20"
+                className="p-2 sm:p-2.5 bg-brand-primary text-white rounded-full hover:bg-blue-600 transition-colors shadow-lg shadow-brand-primary/20 flex-shrink-0"
               >
-                <Send size={18} className="rotate-180 ml-0.5" />
+                <Send size={18} className="rotate-180 sm:ml-0.5" />
               </button>
             </div>
           </div>
