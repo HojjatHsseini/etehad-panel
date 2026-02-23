@@ -1,0 +1,5 @@
+{
+  "name": "Etehad Store Panel",
+  "description": "Automation panel for Etehad Store to manage Telegram, WhatsApp, Instagram, and WordPress.",
+  "requestFramePermissions": []
+}
